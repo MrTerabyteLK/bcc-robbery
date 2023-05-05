@@ -7,7 +7,7 @@ VORPutils = {}
 TriggerEvent("getUtils", function(utils)
   VORPutils = utils
 end)
-
+local spawnedpeds = {} -- Created this to store the spawned peds. Changed the name becouse it's sayd oil wagon peds :D | MRTB
 --Function for Draw 3D Text
 function DrawText3D(x, y, z, text)
   local onScreen,_x,_y=GetScreenCoordFromWorldCoord(x, y, z)
@@ -52,21 +52,28 @@ AddEventHandler('bcc-robbery:DeadCheck', function(coords)
   end
 end)
 
+------------------- Created this event to clear peds to trigger from the client.lua file |MRTB ----------------------
+AddEventHandler('bcc-robbery:ClearPeds', function(coords)
+  for k, v in pairs(spawnedpeds) do
+    DeletePed(v)
+  end
+end)
+
 --Handles spawning the enemy npcs
 AddEventHandler('bcc-robbery:EnemyPeds', function(table)
   local model = 'a_m_m_huntertravelers_cool_01' --sets variable to the string the peds hash
   modelload(model) --triggers the function to load the model
-  local roboilwagonpeds = {} --this creates a table used too store the wagon defenders
+    -- local spawnedpeds = {} --this creates a table used too store the wagon defenders
   for k, v in pairs(table) do --creates a for loop which runs once per table
-    roboilwagonpeds[k] = CreatePed(model, v.x, v.y, v.z, true, true, true, true) --creates the peds and stores them in the table as the [k] key
-    Citizen.InvokeNative(0x283978A15512B2FE, roboilwagonpeds[k], true) --creates a blip on each of the npcs
-    TaskCombatPed(roboilwagonpeds[k], PlayerPedId()) --makes each npc fight the player
-    Citizen.InvokeNative(0x23f74c2fda6e7c61, 953018525, roboilwagonpeds[k]) --sets the blip that tracks the ped
+    spawnedpeds[k] = CreatePed(model, v.x, v.y, v.z, true, true, true, true) --creates the peds and stores them in the table as the [k] key
+    Citizen.InvokeNative(0x283978A15512B2FE, spawnedpeds[k], true) --creates a blip on each of the npcs
+    TaskCombatPed(spawnedpeds[k], PlayerPedId()) --makes each npc fight the player
+    Citizen.InvokeNative(0x23f74c2fda6e7c61, 953018525, spawnedpeds[k]) --sets the blip that tracks the ped
   end
   while true do
     Citizen.Wait(200)
     if PlayerDead then
-      for k, v in pairs(roboilwagonpeds) do
+      for k, v in pairs(spawnedpeds) do
         DeletePed(v)
       end break
     end

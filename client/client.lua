@@ -1,6 +1,9 @@
 --Variables
 Inmission = false
 local robberyenable = false
+local lx = 0 -- Created to store robbery location | MRTB
+local ly = 0-- Created to store robbery location | MRTB
+local lz = 0-- Created to store robbery location | MRTB
 
 
 ----- Registering Command To enable and disable robberies ----
@@ -33,6 +36,9 @@ AddEventHandler('bcc-robbery:MainHandler', function(v)
         if robberyenable then
             local plc = GetEntityCoords(PlayerPedId())
             if GetDistanceBetweenCoords(v.StartingCoords.x, v.StartingCoords.y, v.StartingCoords.z, plc.x, plc.y, plc.z) < 5 then
+                lx = v.StartingCoords.x -- Storing Robbery Locations | MRTB
+                ly = v.StartingCoords.y -- Storing Robbery Locations | MRTB
+                lz = v.StartingCoords.z -- Storing Robbery Locations | MRTB
                 while true do
                     Citizen.Wait(5)
                     if GetDistanceBetweenCoords(v.StartingCoords.x, v.StartingCoords.y, v.StartingCoords.z, plc.x, plc.y, plc.z) > 5 then break end
@@ -114,12 +120,26 @@ AddEventHandler('bcc-robbery:LootHandler', function(e)
                         TriggerServerEvent('bcc-robbery:CashPayout', e.CashReward)
                     end
                     TriggerServerEvent('bcc-robbery:ItemsPayout', e)
+                    Citizen.Wait(5000) -- Wait before clearting Peds | MRTB
+                    TriggerEvent('bcc-robbery:ClearPeds') -- Newley added to clear the peds after lockpicking failed | MRTB
+                    robberyenable = false -- I added this to set robbery enable as false after ending the robbery, in case if the player forgot to disable the robbery | MRTB
                     Inmission = false break
                 else
                     VORPcore.NotifyRightTip(Config.Language.PickFailed, 4000)
+                    Citizen.Wait(5000) -- Wait before clearting Peds | MRTB
+                    TriggerEvent('bcc-robbery:ClearPeds') -- Newley added to clear the peds after lockpicking failed | MRTB
+                    robberyenable = false -- I added this to set robbery enable as false after ending the robbery, in case if the player forgot to disable the robbery | MRTB
                     Inmission = false break
                 end
             end
         end
     end
+end)
+---------------------------- Send Job notification | MRTB ----------------------------
+RegisterNetEvent('JobAlertNotification')
+AddEventHandler('JobAlertNotification', function()
+    VORPcore.NotifyRightTip(Config.AlertMessage, Config.ShowAlertMessageTime) --Send the alert message 
+    local blip = Citizen.InvokeNative(0x45f13b7e0a15c880, -1282792512, lx, ly, lz, 50.0) --Create the alert blip 
+    Wait(Config.ShowAlertBlipTime) -- Wait untill the given time to remove the blip 
+    RemoveBlip(blip) -- remove the created blip 
 end)

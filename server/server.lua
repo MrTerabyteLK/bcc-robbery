@@ -7,21 +7,46 @@ local VORPInv = {}
 VORPInv = exports.vorp_inventory:vorp_inventoryApi()
 
 -------- Job Alert Setup -----
-local police_alert = exports['bcc-job-alerts']:RegisterAlert({
-    name = 'banker', --The name of the alert
-    command = nil, -- the command, this is what players will use with /
-    message = Config.PoliceAlert.AlertMssg, -- Message to show to theh police
-    messageTime = Config.PoliceAlert.ShowMssgTime, -- Time the message will stay on screen (miliseconds)
-    job = Config.PoliceAlert.Job, -- Job the alert is for
-    jobgrade = { 0, 1, 2, 3, 4, 5 }, -- What grades the alert will effect
-    icon = "star", -- The icon the alert will use
-    hash = -1282792512, -- The radius blip
-    radius = 40.0, -- The size of the radius blip
-    blipTime = Config.PoliceAlert.BlipTime, -- How long the blip will stay for the job (miliseconds)
-    blipDelay = 5000, -- Delay time before the job is notified (miliseconds)
-    originText = "", -- Text displayed to the user who enacted the command
-    originTime = 0 --The time the origintext displays (miliseconds)
-})
+-- local police_alert = exports['bcc-job-alerts']:RegisterAlert({
+--     name = 'banker', --The name of the alert
+--     command = nil, -- the command, this is what players will use with /
+--     message = Config.PoliceAlert.AlertMssg, -- Message to show to theh police
+--     messageTime = Config.PoliceAlert.ShowMssgTime, -- Time the message will stay on screen (miliseconds)
+--     job = Config.PoliceAlert.Job, -- Job the alert is for
+--     jobgrade = { 0, 1, 2, 3, 4, 5 }, -- What grades the alert will effect
+--     icon = "star", -- The icon the alert will use
+--     hash = -1282792512, -- The radius blip
+--     radius = 40.0, -- The size of the radius blip
+--     blipTime = Config.PoliceAlert.BlipTime, -- How long the blip will stay for the job (miliseconds)
+--     blipDelay = 5000, -- Delay time before the job is notified (miliseconds)
+--     originText = "", -- Text displayed to the user who enacted the command
+--     originTime = 0 --The time the origintext displays (miliseconds)
+-- })
+
+--------------------------------- Functions to send alerts to jobs | MRTB ---------------------------
+
+function IsJobToAlert(job)
+    for _, j in ipairs(Config.JobsToAlert) do
+        if j == job then
+            return true
+        end
+    end
+    return false
+  end
+
+function sendjobalerts()
+    for _, playerId in ipairs(GetPlayers()) do
+        local user = VORPcore.getUser(playerId)
+        if user then
+            local job = user.getUsedCharacter.job
+            if IsJobToAlert(job) then
+                if Config.EnableJobAlert == true then -- Check if the jobalert is enabled or not  
+                    TriggerClientEvent("JobAlertNotification", playerId)
+                end
+            end
+        end
+    end
+end
 
 ------------- Cooldown Handler thanks to Byte ----------------
 local cooldowns = {}
@@ -32,14 +57,16 @@ RegisterServerEvent('bcc-robbery:ServerCooldownCheck', function(shopid, v)
         if os.difftime(os.time(), cooldowns[shopid]) >= seconds then -- Checks the current time difference from the stored enacted time, then checks if that difference us past the seconds threshold
             cooldowns[shopid] = os.time() --Update the cooldown with the new enacted time.
             TriggerClientEvent("bcc-robbery:RobberyHandler", _source, v) --Robbery is not on cooldown
-            police_alert:SendAlert(_source)
+            -- police_alert:SendAlert(_source)
+            sendjobalerts()
         else --robbery is on cooldown
             VORPcore.NotifyRightTip(_source, Config.Language.OnCooldown, 4000)
         end
     else
         cooldowns[shopid] = os.time() --Store the current time
         TriggerClientEvent("bcc-robbery:RobberyHandler", _source, v) --Robbery is not on cooldown
-        police_alert:SendAlert(_source)
+        -- police_alert:SendAlert(_source)
+        sendjobalerts()
     end
 end)
 
